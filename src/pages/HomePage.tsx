@@ -32,7 +32,12 @@ const HomePage: React.FC = () => {
               <Button asChild size="lg" className="bg-secondary hover:bg-secondary/90">
                 <Link to="/offers">Explore Offers</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-white border-white hover:bg-white/10">
+              <Button 
+                asChild 
+                variant="outline" 
+                size="lg" 
+                className="text-banking-primary border-white hover:bg-white/10"
+              >
                 <Link to="/login">Get Started</Link>
               </Button>
             </div>
