@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, PieChart, CreditCard, ArrowUpRight, ArrowDownRight, Clock, Banknote } from "lucide-react";
 import { bankingOffers } from "@/data/bankingOffers";
 import OfferCard from "@/components/offers/OfferCard";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Account {
+  id: string;
+  name: string;
+  balance: number;
+  number: string;
+}
 
 interface Transaction {
   id: string;
@@ -20,38 +30,177 @@ interface Transaction {
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
+  // Fetch accounts and transactions when the user is authenticated
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (!savedUser) {
+    if (!authLoading && !user) {
       // Redirect to login if no user is found
       navigate("/login");
-    } else {
-      setUser(JSON.parse(savedUser));
+      return;
     }
-  }, [navigate]);
 
-  // Mock account data
-  const accounts = [
-    { id: "savings", name: "Savings Account", balance: 45782.36, number: "XXXX1234" },
-    { id: "current", name: "Current Account", balance: 12450.75, number: "XXXX5678" },
-  ];
+    if (user) {
+      const fetchAccountsAndTransactions = async () => {
+        setIsLoading(true);
+        try {
+          // First check if the user has any accounts
+          const { data: accountsData, error: accountsError } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', user.id);
+            
+          if (accountsError) throw accountsError;
+          
+          // If no accounts, create default ones
+          if (!accountsData || accountsData.length === 0) {
+            // Create default accounts for the user
+            const defaultAccounts = [
+              { 
+                user_id: user.id, 
+                name: 'Savings Account', 
+                number: generateRandomAccountNumber(),
+                balance: 45782.36 
+              },
+              { 
+                user_id: user.id, 
+                name: 'Current Account', 
+                number: generateRandomAccountNumber(),
+                balance: 12450.75 
+              }
+            ];
+            
+            for (const account of defaultAccounts) {
+              await supabase.from('accounts').insert(account);
+            }
+            
+            // Fetch the created accounts
+            const { data: newAccounts, error: newAccountsError } = await supabase
+              .from('accounts')
+              .select('*')
+              .eq('user_id', user.id);
+              
+            if (newAccountsError) throw newAccountsError;
+            setAccounts(newAccounts || []);
+          } else {
+            setAccounts(accountsData);
+          }
+          
+          // Fetch transactions
+          const { data: transactionsData, error: transactionsError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false })
+            .limit(5);
+            
+          if (transactionsError) throw transactionsError;
+          
+          // If no transactions, create default ones
+          if (!transactionsData || transactionsData.length === 0) {
+            // Create default transactions
+            const defaultTransactions = [
+              { 
+                user_id: user.id, 
+                description: 'Salary Credit', 
+                amount: 50000, 
+                date: new Date().toISOString(),
+                type: 'credit', 
+                category: 'Income' 
+              },
+              { 
+                user_id: user.id, 
+                description: 'Electricity Bill', 
+                amount: 2450, 
+                date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                type: 'debit', 
+                category: 'Utilities' 
+              },
+              { 
+                user_id: user.id, 
+                description: 'Grocery Store', 
+                amount: 3250, 
+                date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                type: 'debit', 
+                category: 'Shopping' 
+              },
+              { 
+                user_id: user.id, 
+                description: 'Interest Credit', 
+                amount: 782.36, 
+                date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+                type: 'credit', 
+                category: 'Interest' 
+              },
+              { 
+                user_id: user.id, 
+                description: 'Restaurant Payment', 
+                amount: 1840, 
+                date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+                type: 'debit', 
+                category: 'Dining' 
+              }
+            ];
+            
+            for (const transaction of defaultTransactions) {
+              await supabase.from('transactions').insert(transaction);
+            }
+            
+            // Fetch the created transactions
+            const { data: newTransactions, error: newTransactionsError } = await supabase
+              .from('transactions')
+              .select('*')
+              .eq('user_id', user.id)
+              .order('date', { ascending: false })
+              .limit(5);
+              
+            if (newTransactionsError) throw newTransactionsError;
+            setTransactions(newTransactions || []);
+          } else {
+            setTransactions(transactionsData);
+          }
+        } catch (error: any) {
+          console.error('Error fetching data:', error);
+          toast({
+            title: 'Error fetching data',
+            description: error.message || 'Failed to load your banking data',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchAccountsAndTransactions();
+    }
+  }, [user, authLoading, navigate, toast]);
 
-  // Mock recent transactions
-  const recentTransactions: Transaction[] = [
-    { id: "t1", description: "Salary Credit", amount: 50000, date: "2025-04-15", type: "credit", category: "Income" },
-    { id: "t2", description: "Electricity Bill", amount: 2450, date: "2025-04-14", type: "debit", category: "Utilities" },
-    { id: "t3", description: "Grocery Store", amount: 3250, date: "2025-04-12", type: "debit", category: "Shopping" },
-    { id: "t4", description: "Interest Credit", amount: 782.36, date: "2025-04-10", type: "credit", category: "Interest" },
-    { id: "t5", description: "Restaurant Payment", amount: 1840, date: "2025-04-08", type: "debit", category: "Dining" },
-  ];
+  // Helper function to generate random account number
+  const generateRandomAccountNumber = () => {
+    return 'XXXX' + Math.floor(1000 + Math.random() * 9000);
+  };
 
   // Get recommended offers based on user data (mock logic)
   const recommendedOffers = [
     bankingOffers.find(o => o.id === "nari-shakti"),
     bankingOffers.find(o => o.id === "tech-investor"),
   ].filter(Boolean) as typeof bankingOffers;
+
+  if (authLoading || isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-banking-primary">Loading your banking dashboard...</div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!user) {
     return null; // Will redirect to login
@@ -69,11 +218,20 @@ const DashboardPage: React.FC = () => {
     });
   };
 
+  // Calculate total expenses and income
+  const totalExpenses = transactions
+    .filter(t => t.type === 'debit')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+    
+  const totalIncome = transactions
+    .filter(t => t.type === 'credit')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-banking-primary">Welcome back, {user.name}</h1>
+          <h1 className="text-3xl font-bold text-banking-primary">Welcome back, {user.user_metadata.name || user.email}</h1>
           <p className="text-gray-600">Here's a summary of your accounts and recommended offers.</p>
         </div>
 
@@ -94,7 +252,7 @@ const DashboardPage: React.FC = () => {
           <Card className="border-banking-primary/20">
             <CardHeader className="pb-2">
               <CardDescription>Total Expenses (This Month)</CardDescription>
-              <CardTitle className="text-2xl">₹7,540.00</CardTitle>
+              <CardTitle className="text-2xl">{formatCurrency(totalExpenses)}</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center">
               <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
@@ -105,7 +263,7 @@ const DashboardPage: React.FC = () => {
           <Card className="border-banking-primary/20">
             <CardHeader className="pb-2">
               <CardDescription>Total Income (This Month)</CardDescription>
-              <CardTitle className="text-2xl">₹50,782.36</CardTitle>
+              <CardTitle className="text-2xl">{formatCurrency(totalIncome)}</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center">
               <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
@@ -128,7 +286,7 @@ const DashboardPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentTransactions.map(transaction => (
+                {transactions.map(transaction => (
                   <div key={transaction.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                     <div className="flex items-center">
                       <div className={`w-10 h-10 rounded-full mr-4 flex items-center justify-center ${

@@ -7,44 +7,88 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage("");
     
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock successful login
-      localStorage.setItem("user", JSON.stringify({ name: "Demo User", email: "user@example.com" }));
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
       toast({
         title: "Login successful",
         description: "Welcome back to Inclusive Banking Oasis",
       });
       navigate("/dashboard");
-    }, 1500);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setErrorMessage(error.message || "Failed to login");
+      toast({
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage("");
     
-    // Simulate signup process
-    setTimeout(() => {
+    if (!name) {
+      setErrorMessage("Please enter your name");
       setIsLoading(false);
-      // Mock successful signup
-      localStorage.setItem("user", JSON.stringify({ name: "New User", email: "newuser@example.com" }));
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
+      
+      if (error) throw error;
+      
       toast({
         title: "Account created",
         description: "Welcome to Inclusive Banking Oasis",
       });
       navigate("/dashboard");
-    }, 1500);
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      setErrorMessage(error.message || "Failed to create account");
+      toast({
+        title: "Signup failed",
+        description: error.message || "Please check your information and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -64,9 +108,21 @@ const AuthForm: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {errorMessage && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                  {errorMessage}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="email@example.com" required />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="email@example.com" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -75,7 +131,13 @@ const AuthForm: React.FC = () => {
                     Forgot password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </CardContent>
             <CardFooter>
@@ -99,21 +161,49 @@ const AuthForm: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {errorMessage && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                  {errorMessage}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="John Doe" required />
+                <Input 
+                  id="name" 
+                  placeholder="John Doe" 
+                  required 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
-                <Input id="signup-email" type="email" placeholder="email@example.com" required />
+                <Input 
+                  id="signup-email" 
+                  type="email" 
+                  placeholder="email@example.com" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
-                <Input id="signup-password" type="password" required />
+                <Input 
+                  id="signup-password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input id="confirm-password" type="password" required />
+                <Input 
+                  id="confirm-password" 
+                  type="password" 
+                  required 
+                />
               </div>
             </CardContent>
             <CardFooter>

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,26 +13,32 @@ import {
 import { Menu, User, LogOut, Home, CreditCard, PiggyBank, Gift } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const { user, signOut } = useAuth();
 
   const isLoggedIn = !!user;
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging you out",
+        variant: "destructive",
+      });
+    }
   };
 
   const navigation = [
@@ -113,7 +119,7 @@ const Header: React.FC = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{user.name}</span>
+                    <span>{user.user_metadata.name || user.email}</span>
                     <span className="text-xs text-muted-foreground">{user.email}</span>
                   </div>
                 </DropdownMenuLabel>
