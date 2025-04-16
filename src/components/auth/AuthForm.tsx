@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const AuthForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,6 +17,7 @@ const AuthForm: React.FC = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -22,6 +25,7 @@ const AuthForm: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage("");
+    setShowConfirmationMessage(false);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -29,13 +33,23 @@ const AuthForm: React.FC = () => {
         password,
       });
       
-      if (error) throw error;
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back to Inclusive Banking Oasis",
-      });
-      navigate("/dashboard");
+      if (error) {
+        if (error.message === "Email not confirmed") {
+          setShowConfirmationMessage(true);
+          toast({
+            title: "Email verification required",
+            description: "Please check your inbox and confirm your email address",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to Inclusive Banking Oasis",
+        });
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
       setErrorMessage(error.message || "Failed to login");
@@ -53,6 +67,7 @@ const AuthForm: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage("");
+    setShowConfirmationMessage(false);
     
     if (!name) {
       setErrorMessage("Please enter your name");
@@ -73,17 +88,48 @@ const AuthForm: React.FC = () => {
       
       if (error) throw error;
       
+      setShowConfirmationMessage(true);
       toast({
-        title: "Account created",
-        description: "Welcome to Inclusive Banking Oasis",
+        title: "Signup successful",
+        description: "Please check your email to confirm your account",
       });
-      navigate("/dashboard");
     } catch (error: any) {
       console.error("Signup error:", error);
       setErrorMessage(error.message || "Failed to create account");
       toast({
         title: "Signup failed",
         description: error.message || "Please check your information and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendConfirmationEmail = async () => {
+    if (!email) {
+      setErrorMessage("Please enter your email address");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Confirmation email sent",
+        description: "Please check your inbox for the verification link",
+      });
+    } catch (error: any) {
+      console.error("Email resend error:", error);
+      toast({
+        title: "Failed to resend email",
+        description: error.message || "Please try again later",
         variant: "destructive",
       });
     } finally {
@@ -99,6 +145,27 @@ const AuthForm: React.FC = () => {
           <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
         
+        {showConfirmationMessage && (
+          <Alert className="mt-4 mx-4 bg-amber-50 border-amber-200">
+            <InfoIcon className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-800">Email confirmation required</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Please check your inbox and click on the verification link to confirm your email address.
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={resendConfirmationEmail}
+                  disabled={isLoading}
+                  className="text-amber-600 border-amber-300 hover:bg-amber-100"
+                >
+                  Resend confirmation email
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <TabsContent value="login">
           <form onSubmit={handleLogin}>
             <CardHeader>
@@ -108,7 +175,7 @@ const AuthForm: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {errorMessage && (
+              {errorMessage && !showConfirmationMessage && (
                 <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
                   {errorMessage}
                 </div>
@@ -161,7 +228,7 @@ const AuthForm: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {errorMessage && (
+              {errorMessage && !showConfirmationMessage && (
                 <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
                   {errorMessage}
                 </div>
