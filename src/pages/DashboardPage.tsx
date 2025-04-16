@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -28,6 +27,17 @@ interface Transaction {
   category: string;
 }
 
+interface SupabaseTransaction {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  type: string;
+  category: string;
+  user_id: string;
+  created_at: string;
+}
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
@@ -36,10 +46,8 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  // Fetch accounts and transactions when the user is authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      // Redirect to login if no user is found
       navigate("/login");
       return;
     }
@@ -48,7 +56,6 @@ const DashboardPage: React.FC = () => {
       const fetchAccountsAndTransactions = async () => {
         setIsLoading(true);
         try {
-          // First check if the user has any accounts
           const { data: accountsData, error: accountsError } = await supabase
             .from('accounts')
             .select('*')
@@ -56,9 +63,7 @@ const DashboardPage: React.FC = () => {
             
           if (accountsError) throw accountsError;
           
-          // If no accounts, create default ones
           if (!accountsData || accountsData.length === 0) {
-            // Create default accounts for the user
             const defaultAccounts = [
               { 
                 user_id: user.id, 
@@ -78,7 +83,6 @@ const DashboardPage: React.FC = () => {
               await supabase.from('accounts').insert(account);
             }
             
-            // Fetch the created accounts
             const { data: newAccounts, error: newAccountsError } = await supabase
               .from('accounts')
               .select('*')
@@ -90,7 +94,6 @@ const DashboardPage: React.FC = () => {
             setAccounts(accountsData);
           }
           
-          // Fetch transactions
           const { data: transactionsData, error: transactionsError } = await supabase
             .from('transactions')
             .select('*')
@@ -100,9 +103,7 @@ const DashboardPage: React.FC = () => {
             
           if (transactionsError) throw transactionsError;
           
-          // If no transactions, create default ones
           if (!transactionsData || transactionsData.length === 0) {
-            // Create default transactions
             const defaultTransactions = [
               { 
                 user_id: user.id, 
@@ -150,7 +151,6 @@ const DashboardPage: React.FC = () => {
               await supabase.from('transactions').insert(transaction);
             }
             
-            // Fetch the created transactions
             const { data: newTransactions, error: newTransactionsError } = await supabase
               .from('transactions')
               .select('*')
@@ -159,9 +159,28 @@ const DashboardPage: React.FC = () => {
               .limit(5);
               
             if (newTransactionsError) throw newTransactionsError;
-            setTransactions(newTransactions || []);
+            
+            const typedTransactions: Transaction[] = (newTransactions || []).map((transaction: SupabaseTransaction) => ({
+              id: transaction.id,
+              description: transaction.description,
+              amount: transaction.amount,
+              date: transaction.date,
+              type: transaction.type as "credit" | "debit",
+              category: transaction.category
+            }));
+            
+            setTransactions(typedTransactions);
           } else {
-            setTransactions(transactionsData);
+            const typedTransactions: Transaction[] = transactionsData.map((transaction: SupabaseTransaction) => ({
+              id: transaction.id,
+              description: transaction.description,
+              amount: transaction.amount,
+              date: transaction.date,
+              type: transaction.type as "credit" | "debit",
+              category: transaction.category
+            }));
+            
+            setTransactions(typedTransactions);
           }
         } catch (error: any) {
           console.error('Error fetching data:', error);
@@ -179,12 +198,10 @@ const DashboardPage: React.FC = () => {
     }
   }, [user, authLoading, navigate, toast]);
 
-  // Helper function to generate random account number
   const generateRandomAccountNumber = () => {
     return 'XXXX' + Math.floor(1000 + Math.random() * 9000);
   };
 
-  // Get recommended offers based on user data (mock logic)
   const recommendedOffers = [
     bankingOffers.find(o => o.id === "nari-shakti"),
     bankingOffers.find(o => o.id === "tech-investor"),
@@ -203,7 +220,7 @@ const DashboardPage: React.FC = () => {
   }
 
   if (!user) {
-    return null; // Will redirect to login
+    return null;
   }
 
   const formatCurrency = (amount: number) => {
@@ -218,7 +235,6 @@ const DashboardPage: React.FC = () => {
     });
   };
 
-  // Calculate total expenses and income
   const totalExpenses = transactions
     .filter(t => t.type === 'debit')
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -235,7 +251,6 @@ const DashboardPage: React.FC = () => {
           <p className="text-gray-600">Here's a summary of your accounts and recommended offers.</p>
         </div>
 
-        {/* Account Summary Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {accounts.map(account => (
             <Card key={account.id} className="border-banking-primary/20">
@@ -273,7 +288,6 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-7 mb-8">
-          {/* Recent Transactions */}
           <Card className="border-banking-primary/20 md:col-span-4">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -314,7 +328,6 @@ const DashboardPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
           <Card className="border-banking-primary/20 md:col-span-3">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -337,7 +350,6 @@ const DashboardPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Recommended Offers */}
         <Card className="border-banking-primary/20 mb-8">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
