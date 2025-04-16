@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,7 @@ const HomePage: React.FC = () => {
               Discover specialized banking offers designed to meet your unique financial needs and goals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="banking-gradient">
+              <Button asChild size="lg" className="bg-secondary hover:bg-secondary/90">
                 <Link to="/offers">Explore Offers</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="text-white border-white hover:bg-white/10">
