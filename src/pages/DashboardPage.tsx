@@ -48,18 +48,16 @@ const DashboardPage: React.FC = () => {
           // Example: const accountsResponse = await axios.get('/api/accounts');
           // Example: const transactionsResponse = await axios.get('/api/transactions');
           
-          // For now, we'll use mock data similar to the Supabase implementation
+          // For now, we'll use mock data similar to the Spring Boot implementation
           const defaultAccounts: Account[] = [
             { 
               id: '1',
-              user_id: user.id, 
               name: 'Savings Account', 
               number: generateRandomAccountNumber(),
               balance: 45782.36 
             },
             { 
               id: '2',
-              user_id: user.id, 
               name: 'Current Account', 
               number: generateRandomAccountNumber(),
               balance: 12450.75 
@@ -71,7 +69,6 @@ const DashboardPage: React.FC = () => {
           const defaultTransactions: Transaction[] = [
             { 
               id: '1',
-              user_id: user.id, 
               description: 'Salary Credit', 
               amount: 50000, 
               date: new Date().toISOString(),
@@ -80,7 +77,6 @@ const DashboardPage: React.FC = () => {
             },
             { 
               id: '2',
-              user_id: user.id, 
               description: 'Electricity Bill', 
               amount: 2450, 
               date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
@@ -89,7 +85,6 @@ const DashboardPage: React.FC = () => {
             },
             { 
               id: '3',
-              user_id: user.id, 
               description: 'Grocery Store', 
               amount: 3250, 
               date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -98,7 +93,6 @@ const DashboardPage: React.FC = () => {
             },
             { 
               id: '4',
-              user_id: user.id, 
               description: 'Interest Credit', 
               amount: 782.36, 
               date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -107,7 +101,6 @@ const DashboardPage: React.FC = () => {
             },
             { 
               id: '5',
-              user_id: user.id, 
               description: 'Restaurant Payment', 
               amount: 1840, 
               date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
@@ -137,6 +130,18 @@ const DashboardPage: React.FC = () => {
     return 'XXXX' + Math.floor(1000 + Math.random() * 9000);
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
   const recommendedOffers = [
     bankingOffers.find(o => o.id === "nari-shakti"),
     bankingOffers.find(o => o.id === "tech-investor"),
@@ -157,18 +162,6 @@ const DashboardPage: React.FC = () => {
   if (!user) {
     return null;
   }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    });
-  };
 
   const totalExpenses = transactions
     .filter(t => t.type === 'debit')
