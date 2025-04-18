@@ -1,59 +1,52 @@
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Session, User } from "@supabase/supabase-js";
+import React, { createContext, useContext, useState } from "react";
 
-interface AuthContextProps {
-  session: Session | null;
-  user: User | null;
-  isLoading: boolean;
-  signOut: () => Promise<void>;
+interface DummyUser {
+  id: string;
+  email: string;
+  name: string;
 }
 
+interface AuthContextProps {
+  user: DummyUser | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => void;
+}
+
+const dummyUsers = [
+  { id: '1', email: 'john@example.com', password: 'password123', name: 'John Doe' },
+  { id: '2', email: 'jane@example.com', password: 'password123', name: 'Jane Smith' }
+];
+
 const AuthContext = createContext<AuthContextProps>({
-  session: null,
   user: null,
-  isLoading: true,
-  signOut: async () => {},
+  signIn: async () => {},
+  signOut: () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<DummyUser | null>(null);
 
-  useEffect(() => {
-    // First set up the auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      }
-    );
+  const signIn = async (email: string, password: string) => {
+    const dummyUser = dummyUsers.find(u => u.email === email && u.password === password);
+    if (dummyUser) {
+      const { password: _, ...userWithoutPassword } = dummyUser;
+      setUser(userWithoutPassword);
+    } else {
+      throw new Error('Invalid credentials');
+    }
+  };
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    // Cleanup function
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = () => {
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
