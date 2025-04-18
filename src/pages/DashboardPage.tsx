@@ -8,7 +8,6 @@ import { ArrowRight, PieChart, CreditCard, ArrowUpRight, ArrowDownRight, Clock, 
 import { bankingOffers } from "@/data/bankingOffers";
 import OfferCard from "@/components/offers/OfferCard";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Account {
@@ -25,17 +24,6 @@ interface Transaction {
   date: string;
   type: "credit" | "debit";
   category: string;
-}
-
-interface SupabaseTransaction {
-  id: string;
-  description: string;
-  amount: number;
-  date: string;
-  type: string;
-  category: string;
-  user_id: string;
-  created_at: string;
 }
 
 const DashboardPage: React.FC = () => {
@@ -56,132 +44,79 @@ const DashboardPage: React.FC = () => {
       const fetchAccountsAndTransactions = async () => {
         setIsLoading(true);
         try {
-          const { data: accountsData, error: accountsError } = await supabase
-            .from('accounts')
-            .select('*')
-            .eq('user_id', user.id);
-            
-          if (accountsError) throw accountsError;
+          // This would be replaced with Spring Boot API calls
+          // Example: const accountsResponse = await axios.get('/api/accounts');
+          // Example: const transactionsResponse = await axios.get('/api/transactions');
           
-          if (!accountsData || accountsData.length === 0) {
-            const defaultAccounts = [
-              { 
-                user_id: user.id, 
-                name: 'Savings Account', 
-                number: generateRandomAccountNumber(),
-                balance: 45782.36 
-              },
-              { 
-                user_id: user.id, 
-                name: 'Current Account', 
-                number: generateRandomAccountNumber(),
-                balance: 12450.75 
-              }
-            ];
-            
-            for (const account of defaultAccounts) {
-              await supabase.from('accounts').insert(account);
+          // For now, we'll use mock data similar to the Supabase implementation
+          const defaultAccounts: Account[] = [
+            { 
+              id: '1',
+              user_id: user.id, 
+              name: 'Savings Account', 
+              number: generateRandomAccountNumber(),
+              balance: 45782.36 
+            },
+            { 
+              id: '2',
+              user_id: user.id, 
+              name: 'Current Account', 
+              number: generateRandomAccountNumber(),
+              balance: 12450.75 
             }
-            
-            const { data: newAccounts, error: newAccountsError } = await supabase
-              .from('accounts')
-              .select('*')
-              .eq('user_id', user.id);
-              
-            if (newAccountsError) throw newAccountsError;
-            setAccounts(newAccounts || []);
-          } else {
-            setAccounts(accountsData);
-          }
+          ];
           
-          const { data: transactionsData, error: transactionsError } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('date', { ascending: false })
-            .limit(5);
-            
-          if (transactionsError) throw transactionsError;
+          setAccounts(defaultAccounts);
           
-          if (!transactionsData || transactionsData.length === 0) {
-            const defaultTransactions = [
-              { 
-                user_id: user.id, 
-                description: 'Salary Credit', 
-                amount: 50000, 
-                date: new Date().toISOString(),
-                type: 'credit', 
-                category: 'Income' 
-              },
-              { 
-                user_id: user.id, 
-                description: 'Electricity Bill', 
-                amount: 2450, 
-                date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-                type: 'debit', 
-                category: 'Utilities' 
-              },
-              { 
-                user_id: user.id, 
-                description: 'Grocery Store', 
-                amount: 3250, 
-                date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                type: 'debit', 
-                category: 'Shopping' 
-              },
-              { 
-                user_id: user.id, 
-                description: 'Interest Credit', 
-                amount: 782.36, 
-                date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-                type: 'credit', 
-                category: 'Interest' 
-              },
-              { 
-                user_id: user.id, 
-                description: 'Restaurant Payment', 
-                amount: 1840, 
-                date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-                type: 'debit', 
-                category: 'Dining' 
-              }
-            ];
-            
-            for (const transaction of defaultTransactions) {
-              await supabase.from('transactions').insert(transaction);
+          const defaultTransactions: Transaction[] = [
+            { 
+              id: '1',
+              user_id: user.id, 
+              description: 'Salary Credit', 
+              amount: 50000, 
+              date: new Date().toISOString(),
+              type: 'credit', 
+              category: 'Income' 
+            },
+            { 
+              id: '2',
+              user_id: user.id, 
+              description: 'Electricity Bill', 
+              amount: 2450, 
+              date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+              type: 'debit', 
+              category: 'Utilities' 
+            },
+            { 
+              id: '3',
+              user_id: user.id, 
+              description: 'Grocery Store', 
+              amount: 3250, 
+              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+              type: 'debit', 
+              category: 'Shopping' 
+            },
+            { 
+              id: '4',
+              user_id: user.id, 
+              description: 'Interest Credit', 
+              amount: 782.36, 
+              date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+              type: 'credit', 
+              category: 'Interest' 
+            },
+            { 
+              id: '5',
+              user_id: user.id, 
+              description: 'Restaurant Payment', 
+              amount: 1840, 
+              date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+              type: 'debit', 
+              category: 'Dining' 
             }
-            
-            const { data: newTransactions, error: newTransactionsError } = await supabase
-              .from('transactions')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('date', { ascending: false })
-              .limit(5);
-              
-            if (newTransactionsError) throw newTransactionsError;
-            
-            const typedTransactions: Transaction[] = (newTransactions || []).map((transaction: SupabaseTransaction) => ({
-              id: transaction.id,
-              description: transaction.description,
-              amount: transaction.amount,
-              date: transaction.date,
-              type: transaction.type as "credit" | "debit",
-              category: transaction.category
-            }));
-            
-            setTransactions(typedTransactions);
-          } else {
-            const typedTransactions: Transaction[] = transactionsData.map((transaction: SupabaseTransaction) => ({
-              id: transaction.id,
-              description: transaction.description,
-              amount: transaction.amount,
-              date: transaction.date,
-              type: transaction.type as "credit" | "debit",
-              category: transaction.category
-            }));
-            
-            setTransactions(typedTransactions);
-          }
+          ];
+          
+          setTransactions(defaultTransactions);
         } catch (error: any) {
           console.error('Error fetching data:', error);
           toast({

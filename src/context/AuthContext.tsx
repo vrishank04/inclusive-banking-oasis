@@ -50,6 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // In a real implementation, this would be replaced with a Spring Boot API call
+      // Example: const response = await axios.post('/api/auth/login', { email, password });
+      
       const dummyUser = dummyUsers.find(u => u.email === email && u.password === password);
       if (dummyUser) {
         const { password: _, ...userWithoutPassword } = dummyUser;
@@ -63,6 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = () => {
+    // In a real implementation, this would be replaced with a Spring Boot API call
+    // Example: await axios.post('/api/auth/logout');
     setUser(null);
   };
 
